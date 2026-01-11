@@ -1,0 +1,13 @@
+# scripts
+*.bat
+*.sh
+
+# text files
+*.txt
+!CMakeLists.txt
+
+# built binaries
+libpng-loader-generated.h
+build
+*.dll
+*.exe

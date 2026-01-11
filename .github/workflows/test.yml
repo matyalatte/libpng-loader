@@ -1,0 +1,34 @@
+name: test
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: test-${{ matrix.platform }}
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      matrix:
+        platform: [
+          "windows-latest",
+          "ubuntu-latest",
+          "macos-latest",
+        ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - if: runner.os=='Linux'
+        run: sudo apt-get install libpng-dev
+
+      - if: runner.os=='Windows'
+        run: |
+          vcpkg install libpng:x64-windows
+          echo "C:\vcpkg\installed\x64-windows\bin" >> $env:GITHUB_PATH
+
+      - run: |
+          cmake -S . -B build
+          cmake --build build
+          ctest --test-dir build --verbose -C Debug
