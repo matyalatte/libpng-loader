@@ -389,8 +389,15 @@ def get_args():
         default=",".join(default_optional_keywords), type=str,
         help="comma separeted list of keywords to make APIs optional which contain one of the keywords"
     )
+    default_remove_keywords = [
+        # We should not pass FILE* to libpng because it can cause invalid memory access
+        # https://learn.microsoft.com/en-us/cpp/c-runtime-library/potential-errors-passing-crt-objects-across-dll-boundaries?view=msvc-170
+        "stdio",
+        "init_io",
+    ]
     parser.add_argument(
-        "--remove_keywords", default="", type=str,
+        "--remove_keywords",
+        default=",".join(default_remove_keywords), type=str,
         help="comma separeted list of keywords to remove APIs which contain one of the keywords"
     )
     default_optional_functions = [

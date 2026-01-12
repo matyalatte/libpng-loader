@@ -122,6 +122,18 @@ const char* libpng_get_loader_ver(void);
  */
 void libpng_print_missing_functions(FILE *stream, int show_optional);
 
+typedef struct png_struct_def png_struct;
+
+// We use a custom implementation of png_init_io,
+// because passing FILE* to libpng can cause invalid memory access.
+// https://learn.microsoft.com/en-us/cpp/c-runtime-library/potential-errors-passing-crt-objects-across-dll-boundaries?view=msvc-170
+
+// Calls png_set_read_fn with a default callback for reading png files.
+void png_init_read_io(png_struct *png_ptr, FILE *fp);
+
+// Calls png_set_write_fn with default callbacks for writing png files.
+void png_init_write_io(png_struct *png_ptr, FILE *fp);
+
 #ifdef __cplusplus
 }
 #endif
@@ -140,7 +152,6 @@ typedef size_t png_alloc_size_t;
 typedef png_int_32 png_fixed_point;
 typedef double png_double;
 
-typedef struct png_struct_def png_struct;
 typedef png_struct *png_structp;
 
 typedef struct png_info_def png_info;
@@ -591,7 +602,7 @@ typedef struct {
     LIBPNG_MAP(png_set_text_compression_strategy) \
     LIBPNG_MAP(png_set_text_compression_window_bits) \
     LIBPNG_MAP(png_set_text_compression_method) \
-    LIBPNG_MAP(png_init_io) \
+    REMOVE_API(png_init_io) \
     LIBPNG_MAP(png_set_error_fn) \
     LIBPNG_MAP(png_get_error_ptr) \
     LIBPNG_MAP(png_set_write_fn) \
@@ -755,12 +766,12 @@ typedef struct {
     LIBPNG_MAP(png_set_check_for_invalid_index) \
     LIBPNG_MAP(png_get_palette_max) \
     LIBPNG_MAP(png_image_begin_read_from_file) \
-    LIBPNG_MAP(png_image_begin_read_from_stdio) \
+    REMOVE_API(png_image_begin_read_from_stdio) \
     LIBPNG_MAP(png_image_begin_read_from_memory) \
     LIBPNG_MAP(png_image_finish_read) \
     LIBPNG_MAP(png_image_free) \
     LIBPNG_MAP(png_image_write_to_file) \
-    LIBPNG_MAP(png_image_write_to_stdio) \
+    REMOVE_API(png_image_write_to_stdio) \
     LIBPNG_MAP(png_image_write_to_memory) \
     LIBPNG_MAP(png_set_option)
 

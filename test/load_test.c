@@ -1,15 +1,6 @@
 #include "libpng-loader.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <malloc.h>
-
-static void png_write_data(png_struct *png_ptr, png_byte *data, png_size_t length) {
-    FILE* io = (FILE*)png_get_io_ptr(png_ptr);
-    fwrite(data, sizeof(png_byte), length, io);
-}
-
-static void png_flush_data(png_struct *png_ptr) {
-}
 
 static int write_png(const char* filename) {
     int width = 300, height = 250;
@@ -40,7 +31,7 @@ static int write_png(const char* filename) {
         return 1;
     }
 
-    png_set_write_fn(png, (png_void*)fp, png_write_data, png_flush_data);
+    png_init_write_io(png, fp);
 
     // Set image attributes (8-bit color depth, RGBA)
     png_set_IHDR(

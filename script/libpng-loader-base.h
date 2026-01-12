@@ -122,6 +122,18 @@ const char* libpng_get_loader_ver(void);
  */
 void libpng_print_missing_functions(FILE *stream, int show_optional);
 
+typedef struct png_struct_def png_struct;
+
+// We use a custom implementation of png_init_io,
+// because passing FILE* to libpng can cause invalid memory access.
+// https://learn.microsoft.com/en-us/cpp/c-runtime-library/potential-errors-passing-crt-objects-across-dll-boundaries?view=msvc-170
+
+// Calls png_set_read_fn with a default callback for reading png files.
+void png_init_read_io(png_struct *png_ptr, FILE *fp);
+
+// Calls png_set_write_fn with default callbacks for writing png files.
+void png_init_write_io(png_struct *png_ptr, FILE *fp);
+
 #ifdef __cplusplus
 }
 #endif
@@ -140,7 +152,6 @@ typedef size_t png_alloc_size_t;
 typedef png_int_32 png_fixed_point;
 typedef double png_double;
 
-typedef struct png_struct_def png_struct;
 typedef png_struct *png_structp;
 
 typedef struct png_info_def png_info;

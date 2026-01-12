@@ -260,6 +260,46 @@ void libpng_print_missing_functions(FILE *stream, int show_optional) {
         fprintf(stream, "  (none)");
 }
 
+static void png_default_read_data(png_struct *png_ptr, png_byte *data, size_t length) {
+    if (png_get_io_ptr == NULL || png_ptr == NULL)
+        return;
+    FILE* io = (FILE*)png_get_io_ptr(png_ptr);
+    if (io == NULL)
+        return;
+    size_t res = fread(data, 1, length, io);
+    if (res != length && !png_error)
+        png_error(png_ptr, "Read Error");
+}
+
+void png_init_read_io(png_struct *png_ptr, FILE *fp) {
+    if (png_set_read_fn)
+        png_set_read_fn(png_ptr, (png_void*)fp, png_default_read_data);
+}
+
+static void png_default_write_data(png_struct *png_ptr, png_byte *data, png_size_t length) {
+    if (png_get_io_ptr == NULL || png_ptr == NULL)
+        return;
+    FILE* io = (FILE*)png_get_io_ptr(png_ptr);
+    if (io == NULL)
+        return;
+    size_t res = fwrite(data, 1, length, io);
+    if (res != length && !png_error)
+        png_error(png_ptr, "Write Error");
+}
+
+static void png_default_flush_data(png_struct *png_ptr) {
+    if (png_get_io_ptr == NULL || png_ptr == NULL)
+        return;
+    FILE* io = (FILE*)png_get_io_ptr(png_ptr);
+    if (io != NULL)
+        fflush(io);
+}
+
+void png_init_write_io(png_struct *png_ptr, FILE *fp) {
+    if (png_set_write_fn)
+        png_set_write_fn(png_ptr, (png_void*)fp, png_default_write_data, png_default_flush_data);
+}
+
 // declare all function pointers
 #define LIBPNG_MAP(func) PFN_##func func = NULL;
 #define LIBPNG_OPT(func_ptr) LIBPNG_MAP(func_ptr);
