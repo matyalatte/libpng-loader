@@ -375,6 +375,8 @@ def get_args():
     parser.add_argument("--png_h", default=None, type=str, help="path to png.h")
     parser.add_argument("--base_h", default=None, type=str, help="path to libpng-loader-base.h")
     parser.add_argument("--generated_h", default=None, type=str, help="path to libpng-loader-generated.h")
+    parser.add_argument("--overwrite_loader", action='store_true',
+        help="overwrite libpng-loader.h instead of generating libpng-loader-generated.h")
 
     default_optional_keywords = [
         "eXIf", # added at 1.6.31 (July, 2017)
@@ -425,7 +427,10 @@ if __name__ == "__main__":
     if base_h is None:
         base_h = os.path.join(base_dir, "libpng-loader-base.h")
     if generated_h is None:
-        generated_h = os.path.join(base_dir, "libpng-loader-generated.h")
+        if args.overwrite_loader:
+            generated_h = os.path.join(os.path.dirname(base_dir), "libpng-loader.h")
+        else:
+            generated_h = os.path.join(base_dir, "libpng-loader-generated.h")
 
     # Generate libpng-loader-generated.h
     generator = HeaderGenerator(

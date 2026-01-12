@@ -62,6 +62,21 @@ extern "C" {
 libpng_load_error libpng_load(libpng_load_flags flags);
 
 /**
+ * Load libpng from a file path (e.g. `/usr/lib/libpng16.so`).
+ * `dlopen()` and `LoadLibrary()` use the path to load libpng.
+ * You can use `png_*` functions after loading libpng successfully.
+ *
+ * @note: If you get `LIBPNG_ERROR_VERSION_MISMATCH`,
+ *        you can check the version string with
+ *        `libpng_get_user_ver()` and `libpng_get_loader_ver()`.
+ *
+ * @param file A file path to libpng. Null pointer is not allowed.
+ * @param flags Configuration flags. Use `LIBPNG_FLAGS_DEFAULT` to enable validations.
+ * @returns `LIBPNG_SUCCESS` if all functions are loaded, `LIBPNG_ERROR_*` otherwise.
+ */
+libpng_load_error libpng_load_from_path(const char* file, libpng_load_flags flags);
+
+/**
  * Free libpng and initialize function pointers.
  *
  * @note: `libpng_free()` does not initialize the version string buffer.

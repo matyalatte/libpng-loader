@@ -127,7 +127,7 @@ static void load_functions(void) {
     #undef LIBPNG_OPT
 }
 
-libpng_load_error libpng_load(libpng_load_flags flags) {
+static libpng_load_error libpng_load_base(const char* file, libpng_load_flags flags) {
     int print_errors = flags & LIBPNG_LOAD_FLAGS_PRINT_ERRORS;
     if (libpng_is_loaded()) {
         if (print_errors)
@@ -144,19 +144,23 @@ libpng_load_error libpng_load(libpng_load_flags flags) {
     #endif
 
     libpng_load_error err;
-    // Find libpng16.so
-    err = open_library("libpng16" LIB_EXT, &libpng_ptr, print_errors);
-    #ifdef __APPLE__
-    // macOS does not search these folders
-    if (!libpng_ptr && err == LIBPNG_ERROR_LIBPNG_NOT_FOUND)
-        err = open_library("/usr/local/lib/libpng16" LIB_EXT, &libpng_ptr, print_errors);
-    if (!libpng_ptr && err == LIBPNG_ERROR_LIBPNG_NOT_FOUND)
-        err = open_library("/opt/homebrew/lib/libpng16" LIB_EXT, &libpng_ptr, print_errors);
-    #else
-    // Find libpng.so
-    if (!libpng_ptr && err == LIBPNG_ERROR_LIBPNG_NOT_FOUND)
-        err = open_library("libpng" LIB_EXT, &libpng_ptr, print_errors);
-    #endif
+    if (file) {
+        err = open_library(file, &libpng_ptr, print_errors);
+    } else {
+        // Find libpng16.so
+        err = open_library("libpng16" LIB_EXT, &libpng_ptr, print_errors);
+        #ifdef __APPLE__
+        // macOS does not search these folders
+        if (!libpng_ptr && err == LIBPNG_ERROR_LIBPNG_NOT_FOUND)
+            err = open_library("/usr/local/lib/libpng16" LIB_EXT, &libpng_ptr, print_errors);
+        if (!libpng_ptr && err == LIBPNG_ERROR_LIBPNG_NOT_FOUND)
+            err = open_library("/opt/homebrew/lib/libpng16" LIB_EXT, &libpng_ptr, print_errors);
+        #else
+        // Find libpng.so
+        if (!libpng_ptr && err == LIBPNG_ERROR_LIBPNG_NOT_FOUND)
+            err = open_library("libpng" LIB_EXT, &libpng_ptr, print_errors);
+        #endif
+    }
 
     if (!libpng_ptr)
         return err;
@@ -198,6 +202,16 @@ libpng_load_error libpng_load(libpng_load_flags flags) {
     }
 
     return LIBPNG_SUCCESS;
+}
+
+libpng_load_error libpng_load(libpng_load_flags flags) {
+    return libpng_load_base(NULL, flags);
+}
+
+libpng_load_error libpng_load_from_path(const char* file, libpng_load_flags flags) {
+    if (!file)
+        return LIBPNG_ERROR_NULL_REFERENCE;
+    return libpng_load_base(file, flags);
 }
 
 void libpng_free(void) {
