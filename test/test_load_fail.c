@@ -26,6 +26,13 @@ int main(void) {
         return 1;
     }
 
+    // The library exists but a linked library is missing
+    err = libpng_load_from_path("./libpng-dummy-linked" LIB_EXT, LIBPNG_LOAD_FLAGS_DEFAULT | LIBPNG_LOAD_FLAGS_PRINT_ERRORS);
+    if (err != LIBPNG_ERROR_LIBZ_NOT_FOUND) {
+        fprintf(stderr, "libpng_load: not LIBPNG_ERROR_LIBZ_NOT_FOUND: %d\n", err);
+        return 1;
+    }
+
     // Test with invalid version
     err = libpng_load_from_path("./libpng-dummy" LIB_EXT, LIBPNG_LOAD_FLAGS_DEFAULT | LIBPNG_LOAD_FLAGS_PRINT_ERRORS);
     if (err != LIBPNG_ERROR_VERSION_MISMATCH) {
