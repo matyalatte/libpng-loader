@@ -505,6 +505,9 @@ typedef struct {
 #define PNG_OPTION_OFF     2
 #define PNG_OPTION_ON      3
 
+#define png_jmpbuf(png_ptr) \
+    (*png_set_longjmp_fn((png_ptr), longjmp, (sizeof (jmp_buf))))
+
 #define REMOVE_API(x)
 
 // This macro can apply a macro to all function pointers.

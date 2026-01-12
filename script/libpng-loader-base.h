@@ -160,6 +160,21 @@ typedef png_info *png_infop;
 typedef struct png_control_def png_control;
 typedef png_control *png_controlp;
 
+// ------ Macros ------
+
+#define png_jmpbuf(png_ptr) \
+    (*png_set_longjmp_fn((png_ptr), longjmp, (sizeof (jmp_buf))))
+
+#define REMOVE_API(x)
+
+// This macro can apply a macro to all function pointers.
+// If you dont want to load some functions, remove "LIBPNG_MAP(png_***) \" from here.
+// (or use the REMOVE_API(x) macro.)
+// They will be removed from the whole binary of libpng-loader.
+// (No need to edit libpng-loader.c!)
+// If you dont want to force some functions to be exists, replace LIBPNG_MAP with LIBPNG_OPT.
+// They will be ignored when libpng-loader checks fuction pointers.
+#define LIBPNG_FUNC_MAPPING \
 // ------ Function Pointers ------
 
 // declare all function pointers

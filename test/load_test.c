@@ -19,10 +19,6 @@ static int write_png(const char* filename) {
     }
     png_infop info = png_create_info_struct(png);
 
-    // TODO: add this macro to libpng-loader.h
-    #  define png_jmpbuf(png_ptr) \
-        (*png_set_longjmp_fn((png_ptr), longjmp, (sizeof (jmp_buf))))
-
     if (setjmp(png_jmpbuf(png))) {
         // libpng jumped here due to an error
         fprintf(stderr, "failed to output png image\n");
