@@ -152,19 +152,64 @@ typedef size_t png_alloc_size_t;
 typedef png_int_32 png_fixed_point;
 typedef double png_double;
 
-typedef png_struct *png_structp;
-
 typedef struct png_info_def png_info;
-typedef png_info *png_infop;
-
 typedef struct png_control_def png_control;
+
+// deprecated pointer type aliases
+typedef void                  * png_voidp;
+typedef const void            * png_const_voidp;
+typedef png_byte              * png_bytep;
+typedef const png_byte        * png_const_bytep;
+typedef png_uint_32           * png_uint_32p;
+typedef const png_uint_32     * png_const_uint_32p;
+typedef png_int_32            * png_int_32p;
+typedef const png_int_32      * png_const_int_32p;
+typedef png_uint_16           * png_uint_16p;
+typedef const png_uint_16     * png_const_uint_16p;
+typedef png_int_16            * png_int_16p;
+typedef const png_int_16      * png_const_int_16p;
+typedef char                  * png_charp;
+typedef const char            * png_const_charp;
+typedef png_fixed_point       * png_fixed_point_p;
+typedef const png_fixed_point * png_const_fixed_point_p;
+typedef size_t                * png_size_tp;
+typedef const size_t          * png_const_size_tp;
+typedef double       *png_doublep;
+typedef const double *png_const_doublep;
+typedef png_byte        **png_bytepp;
+typedef png_uint_32     **png_uint_32pp;
+typedef png_int_32      **png_int_32pp;
+typedef png_uint_16     **png_uint_16pp;
+typedef png_int_16      **png_int_16pp;
+typedef const char      **png_const_charpp;
+typedef char            **png_charpp;
+typedef png_fixed_point **png_fixed_point_pp;
+typedef double          **png_doublepp;
+typedef char ***png_charppp;
+typedef FILE *png_FILE_p;
+
+typedef png_struct *png_structp;
+typedef const png_struct *png_const_structp;
+typedef png_struct **png_structpp;
+typedef png_struct *png_structrp;
+typedef const png_struct *png_const_structrp;
+
+typedef png_info *png_infop;
+typedef const png_info *png_const_infop;
+typedef png_info **png_infopp;
+typedef png_info *png_inforp;
+typedef const png_info *png_const_inforp;
+
 typedef png_control *png_controlp;
 
+// public structs
 typedef struct png_color_struct {
     png_byte red;
     png_byte green;
     png_byte blue;
 } png_color;
+
+typedef png_color *png_colorp;  // deprecated
 
 typedef struct png_color_16_struct {
     png_byte index;
@@ -174,6 +219,8 @@ typedef struct png_color_16_struct {
     png_uint_16 gray;
 } png_color_16;
 
+typedef png_color_16 *png_color_16p;  // deprecated
+
 typedef struct png_color_8_struct {
     png_byte red;
     png_byte green;
@@ -181,6 +228,8 @@ typedef struct png_color_8_struct {
     png_byte gray;
     png_byte alpha;
 } png_color_8;
+
+typedef png_color_8 *png_color_8p;  // deprecated
 
 typedef struct png_sPLT_entry_struct {
     png_uint_16 red;
@@ -190,12 +239,16 @@ typedef struct png_sPLT_entry_struct {
     png_uint_16 frequency;
 } png_sPLT_entry;
 
+typedef png_sPLT_entry *png_sPLT_entryp;  // deprecated
+
 typedef struct png_sPLT_struct {
     png_char * name;
     png_byte depth;
     png_sPLT_entry * entries;
     png_int_32 nentries;
 } png_sPLT_t;
+
+typedef png_sPLT_t *png_sPLT_tp;  // deprecated
 
 typedef struct png_text_struct {
     int compression;
@@ -207,6 +260,8 @@ typedef struct png_text_struct {
     png_char * lang_key;
 } png_text;
 
+typedef png_text *png_textp;  // deprecated
+
 typedef struct png_time_struct {
     png_uint_16 year;
     png_byte month;
@@ -216,12 +271,16 @@ typedef struct png_time_struct {
     png_byte second;
 } png_time;
 
+typedef png_time *png_timep;  // deprecated
+
 typedef struct png_unknown_chunk_t {
     png_byte name[5];
     png_byte *data;
     size_t size;
     png_byte location;
 } png_unknown_chunk;
+
+typedef png_unknown_chunk *png_unknown_chunkp;  // deprecated
 
 typedef struct png_row_info_struct {
     png_uint_32 width;
@@ -231,6 +290,8 @@ typedef struct png_row_info_struct {
     png_byte channels;
     png_byte pixel_depth;
 } png_row_info;
+
+typedef png_row_info *png_row_infop;  // deprecated
 
 typedef struct {
     png_control * opaque;
@@ -242,7 +303,9 @@ typedef struct {
     png_uint_32 colormap_entries;
     png_uint_32 warning_or_error;
     char message[64];
-} png_image, *png_imagep;
+} png_image;
+
+typedef png_image *png_imagep;  // deprecated
 
 // ------ Macros ------
 

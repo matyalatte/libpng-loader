@@ -179,6 +179,7 @@ class StructDef:
             if line == "":
                 return True
             self.name, _ = split_in_two(line, ";")
+            self.name, _ = split_in_two(self.name, ",")
         return False
 
     def get_typedef(self):
@@ -317,9 +318,14 @@ class HeaderGenerator:
             macro_line = base_lines[i]
             base_lines = base_lines[i + 1:]
 
+            outfile.write("// public structs\n")
             for st in self.structs:
                 outfile.write(st.get_typedef())
-                outfile.write("\n")
+                outfile.write(
+                    "\n"
+                    f"typedef {st.name} *{st.name}p;  // deprecated\n"
+                    "\n"
+                )
 
             outfile.write(macro_line + "\n")
 
