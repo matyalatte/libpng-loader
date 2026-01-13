@@ -8,8 +8,13 @@ function(add_png_test name source)
     )
 endfunction()
 
+add_png_test(TestRead test_read)
 add_png_test(TestWrite test_write)
 add_png_test(TestLoadFail test_load_fail)
+add_custom_command(
+    TARGET test_read POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/input.png" $<TARGET_FILE_DIR:test_read>
+)
 
 # a dummy library to test LIBPNG_ERROR_VERSION_MISMATCH and LIBPNG_ERROR_FUNCTION_NOT_FOUND
 add_library(libpng-dummy SHARED dummy_libs/libpng_dummy.c)
