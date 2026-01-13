@@ -252,7 +252,7 @@ const char* libpng_get_user_ver(void) {
     return "0.0.0";
 }
 
-const char* libpng_get_header_ver(void) {
+const char* libpng_get_loader_ver(void) {
     return PNG_LIBPNG_VER_STRING;
 }
 

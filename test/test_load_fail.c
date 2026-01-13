@@ -1,5 +1,6 @@
 #include "libpng-loader.h"
 #include <stdio.h>
+#include <string.h>
 
 #ifdef _WIN32
 #define LIB_EXT ".dll"
@@ -11,6 +12,18 @@
 
 int main(void) {
     libpng_load_error err;
+
+    // Test libpng_get_*_ver()
+    const char* ver = libpng_get_loader_ver();
+    if (strcmp(ver, PNG_LIBPNG_VER_STRING) != 0) {
+        fprintf(stderr, "libpng_get_user_ver: unexpected value: %s", ver);
+        return 1;
+    }
+    ver = libpng_get_user_ver();
+    if (strcmp(ver, "0.0.0") != 0) {
+        fprintf(stderr, "libpng_get_user_ver: unexpected value: %s", ver);
+        return 1;
+    }
 
     // Test with null pointer
     err = libpng_load_from_path(NULL, LIBPNG_LOAD_FLAGS_DEFAULT);
@@ -46,6 +59,12 @@ int main(void) {
     err = libpng_load_from_path("./libpng-dummy" LIB_EXT, LIBPNG_LOAD_FLAGS_DEFAULT | LIBPNG_LOAD_FLAGS_PRINT_ERRORS);
     if (err != LIBPNG_ERROR_VERSION_MISMATCH) {
         fprintf(stderr, "libpng_load: not LIBPNG_ERROR_VERSION_MISMATCH: %d\n", err);
+        return 1;
+    }
+    // Check if we can get the mismatched version string.
+    ver = libpng_get_user_ver();
+    if (strcmp(ver, "1.4.0") != 0) {
+        fprintf(stderr, "libpng_get_user_ver: unexpected value: %s", ver);
         return 1;
     }
 
