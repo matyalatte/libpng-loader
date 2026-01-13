@@ -14,6 +14,11 @@ target_include_directories(libpng-loader PUBLIC
 )
 if (NOT WIN32)
     target_link_libraries(libpng-loader PUBLIC ${CMAKE_DL_LIBS})
+endif()
+if (UNIX
+    OR (WIN32 AND NOT CMAKE_SHARED_LIBRARY_PREFIX STREQUAL "")
+    OR (WIN32 AND NOT CMAKE_STATIC_LIBRARY_PREFIX STREQUAL ""))
+    set(REMOVE_LIBPREFIX ON)
     set_target_properties(libpng-loader PROPERTIES OUTPUT_NAME "png-loader")
 endif()
 

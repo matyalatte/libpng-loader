@@ -11,6 +11,8 @@ set_target_properties(libpng-dummy-cross PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/lib
     LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/lib
 )
-if (NOT WIN32)
+if (UNIX
+    OR (WIN32 AND NOT CMAKE_SHARED_LIBRARY_PREFIX STREQUAL "")
+    OR (WIN32 AND NOT CMAKE_STATIC_LIBRARY_PREFIX STREQUAL ""))
     set_target_properties(libpng-dummy-cross PROPERTIES OUTPUT_NAME "png-dummy-cross")
 endif()

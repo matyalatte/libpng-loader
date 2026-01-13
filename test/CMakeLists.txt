@@ -13,7 +13,7 @@ add_png_test(TestLoadFail test_load_fail)
 
 # a dummy library to test LIBPNG_ERROR_VERSION_MISMATCH and LIBPNG_ERROR_FUNCTION_NOT_FOUND
 add_library(libpng-dummy SHARED dummy_libs/libpng_dummy.c)
-if (NOT WIN32)
+if (REMOVE_LIBPREFIX)
     set_target_properties(libpng-dummy PROPERTIES OUTPUT_NAME "png-dummy")
 endif()
 
@@ -21,7 +21,7 @@ endif()
 add_library(libpng-dummy-linked SHARED dummy_libs/libpng_dummy_linked.c)
 add_library(libz-dummy SHARED dummy_libs/libz_dummy.c)
 target_link_libraries(libpng-dummy-linked PRIVATE libz-dummy)
-if (NOT WIN32)
+if (REMOVE_LIBPREFIX)
     set_target_properties(libpng-dummy-linked PROPERTIES OUTPUT_NAME "png-dummy-linked")
     set_target_properties(libz-dummy PROPERTIES OUTPUT_NAME "z-dummy")
 endif()
