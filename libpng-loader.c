@@ -5,6 +5,9 @@
 #include <dlfcn.h>
 #include <string.h>
 #endif
+#ifdef __linux__
+#include <unistd.h>
+#endif
 
 static void* libpng_ptr = NULL;
 static char libpng_ver_str[16] = {0};
@@ -102,14 +105,24 @@ static libpng_load_error open_library(const char *name, void** lib_ptr, int prin
     if (err_str) {
         if (print_errors)
             fprintf(stderr, "LIBPNG_ERROR: %s\n", err_str);
+        if (strstr(err_str, "ncompatible architecture") ||
+            strstr(err_str, "nvalid ELF") || strstr(err_str, "rong ELF")) {
+            // wrong ELF format
+            return LIBPNG_ERROR_LIBPNG_INVALID_ELF;
+        }
         if (strstr(err_str, "o such file") != 0) {
             // No such file or directory
             if (strstr(err_str, "libz") != 0)
                 return LIBPNG_ERROR_LIBZ_NOT_FOUND;
+#ifdef __linux__
+            // Note: arm64 build of libpng can be here on x64 linux.
+            // TODO: Find a way to search a library in the same way as dlopen
+            if (strchr(name, '/') && strstr(err_str, name) && (access(name, F_OK) == 0)) {
+                // library exists but dlopen can't find it.
+                return LIBPNG_ERROR_LIBPNG_INVALID_ELF;
+            }
+#endif
             return LIBPNG_ERROR_LIBPNG_NOT_FOUND;
-        } else if (strstr(err_str, "nvalid ELF")){
-            // Invalid ELF Header
-            return LIBPNG_ERROR_LIBPNG_INVALID_ELF;
         }
     }
     return LIBPNG_ERROR_LIBPNG_FAIL;

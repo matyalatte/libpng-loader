@@ -8,6 +8,6 @@
 
 # built binaries
 libpng-loader-generated.h
-build
+build*
 *.dll
 *.exe

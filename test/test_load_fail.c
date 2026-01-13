@@ -33,6 +33,15 @@ int main(void) {
         return 1;
     }
 
+#ifdef USE_LIBPNG_DUMMY_CROSS
+    // The library is built for a wrong architecture
+    err = libpng_load_from_path("./libpng-dummy-cross" LIB_EXT, LIBPNG_LOAD_FLAGS_DEFAULT | LIBPNG_LOAD_FLAGS_PRINT_ERRORS);
+    if (err != LIBPNG_ERROR_LIBPNG_INVALID_ELF) {
+        fprintf(stderr, "libpng_load: not LIBPNG_ERROR_LIBPNG_INVALID_ELF: %d\n", err);
+        return 1;
+    }
+#endif
+
     // Test with invalid version
     err = libpng_load_from_path("./libpng-dummy" LIB_EXT, LIBPNG_LOAD_FLAGS_DEFAULT | LIBPNG_LOAD_FLAGS_PRINT_ERRORS);
     if (err != LIBPNG_ERROR_VERSION_MISMATCH) {

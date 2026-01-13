@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(libpng-loader LANGUAGES C)
 
+option(BUILD_TEST "Build tests" ON)
+
 add_library(libpng-loader STATIC
     libpng-loader.h
     libpng-loader.c
@@ -15,5 +17,7 @@ if (NOT WIN32)
     set_target_properties(libpng-loader PROPERTIES OUTPUT_NAME "png-loader")
 endif()
 
-enable_testing()
-add_subdirectory(test)
+if (BUILD_TEST)
+    enable_testing()
+    add_subdirectory(test)
+endif()
