@@ -96,7 +96,6 @@ if(BUILD_CROSS_COMPILE_TEST)
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/test/cross_compiled_test
         BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/cross_compiled_test
         INSTALL_COMMAND ""
-        BUILD_ALWAYS TRUE
         CMAKE_ARGS ${CROSS_CMAKE_ARGS}
     )
 

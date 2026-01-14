@@ -8,7 +8,7 @@ extern "C" {
 #define _EXTERN __attribute__((visibility("default"))) extern
 #endif  // _WIN32
 
-// a dummy library to test LIBPNG_ERROR_VERSION_MISMATCH and LIBPNG_ERROR_FUNCTION_NOT_FOUND
+// a dummy library to test LIBPNG_ERROR_LIBZ_NOT_FOUND
 _EXTERN void zlib_dummy() {
 }
 #ifdef __cplusplus

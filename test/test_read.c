@@ -1,7 +1,6 @@
 #include "libpng-loader.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 static int read_png(const char* filename) {
     FILE *fp = fopen(filename, "rb");
@@ -56,25 +55,15 @@ static int read_png(const char* filename) {
         channel = 3;
     }
 
-    // Allocate and copy row data
-    png_byte* row = (png_byte*) malloc(sizeof(png_byte) * width * channel);
-    if (!row) {
-        fprintf(stderr, "failed to allocate png_byte buffer.\n");
-        png_destroy_read_struct(&png, &info, NULL);
-        fclose(fp);
-        return 1;
-    }
-
     // check pixels
     for(int y = 0; y < (int)height; y++){
-        memcpy(row, datap[y], width * channel);
+        png_byte* row = datap[y];
         for (int x = 0; x < (int)width; x++) {
             if (row[x*4 + 0] != (png_byte)((double)x / (double)width * 255) ||
                 row[x*4 + 1] != 255 ||
                 row[x*4 + 2] != (png_byte)((double)y / (double)height * 255) ||
                 row[x*4 + 3] != 255) {
                 fprintf(stderr, "unexpected pixel data detected.\n");
-                free(row);
                 png_destroy_read_struct(&png, &info, NULL);
                 fclose(fp);
                 return 1;
@@ -83,7 +72,6 @@ static int read_png(const char* filename) {
     }
 
     // Cleanup
-    free(row);
     png_destroy_read_struct(&png, &info, NULL);
     fclose(fp);
     return 0;
