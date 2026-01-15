@@ -329,6 +329,8 @@ typedef png_image *png_imagep;  // deprecated
 #define PNG_LIBPNG_BUILD_SPECIAL 32
 #define PNG_LIBPNG_BUILD_BASE_TYPE PNG_LIBPNG_BUILD_STABLE
 #define PNG_LIBPNG_VER 10653
+#define PNG_LIBPNG_BUILD_TYPE \
+    (PNG_LIBPNG_BUILD_BASE_TYPE | PNG_LIBPNG_BUILD_PRIVATE)
 #define png_libpng_ver png_get_header_ver(NULL)
 #define PNG_TEXT_COMPRESSION_NONE_WR -3
 #define PNG_TEXT_COMPRESSION_zTXt_WR -2
@@ -432,6 +434,8 @@ typedef png_image *png_imagep;  // deprecated
 #define PNG_FLAG_MNG_FILTER_64      0x04
 #define PNG_ALL_MNG_FEATURES        0x05
 #define png_check_sig(sig, n) (png_sig_cmp((sig), 0, (n)) == 0)
+#define png_jmpbuf(png_ptr) \
+    (*png_set_longjmp_fn((png_ptr), longjmp, (sizeof (jmp_buf))))
 #define PNG_ERROR_ACTION_NONE  1
 #define PNG_ERROR_ACTION_WARN  2
 #define PNG_ERROR_ACTION_ERROR 3
@@ -515,6 +519,50 @@ typedef png_image *png_imagep;  // deprecated
 #define PNG_PASS_COL_OFFSET(pass) (1<<((7-(pass))>>1))
 #define PNG_PASS_ROW_SHIFT(pass) ((pass)>2?(8-(pass))>>1:3)
 #define PNG_PASS_COL_SHIFT(pass) ((pass)>1?(7-(pass))>>1:3)
+#define PNG_PASS_ROWS(height, pass) (((height)+(((1<<PNG_PASS_ROW_SHIFT(pass))\
+    -1)-PNG_PASS_START_ROW(pass)))>>PNG_PASS_ROW_SHIFT(pass))
+#define PNG_PASS_COLS(width, pass) (((width)+(((1<<PNG_PASS_COL_SHIFT(pass))\
+    -1)-PNG_PASS_START_COL(pass)))>>PNG_PASS_COL_SHIFT(pass))
+#define PNG_ROW_FROM_PASS_ROW(y_in, pass) \
+    (((y_in)<<PNG_PASS_ROW_SHIFT(pass))+PNG_PASS_START_ROW(pass))
+#define PNG_COL_FROM_PASS_COL(x_in, pass) \
+    (((x_in)<<PNG_PASS_COL_SHIFT(pass))+PNG_PASS_START_COL(pass))
+#define PNG_PASS_MASK(pass,off) ( \
+    ((0x110145AF>>(((7-(off))-(pass))<<2)) & 0xF) | \
+    ((0x01145AF0>>(((7-(off))-(pass))<<2)) & 0xF0))
+#define PNG_ROW_IN_INTERLACE_PASS(y, pass) \
+    ((PNG_PASS_MASK(pass,0) >> ((y)&7)) & 1)
+#define PNG_COL_IN_INTERLACE_PASS(x, pass) \
+    ((PNG_PASS_MASK(pass,1) >> ((x)&7)) & 1)
+#define png_composite(composite, fg, alpha, bg)        \
+    {                                                     \
+    png_uint_16 temp = (png_uint_16)((png_uint_16)(fg) \
+    * (png_uint_16)(alpha)                         \
+    + (png_uint_16)(bg)*(png_uint_16)(255          \
+    - (png_uint_16)(alpha)) + 128);                \
+    (composite) = (png_byte)(((temp + (temp >> 8)) >> 8) & 0xff); \
+    }
+#define png_composite_16(composite, fg, alpha, bg)     \
+    {                                                     \
+    png_uint_32 temp = (png_uint_32)((png_uint_32)(fg) \
+    * (png_uint_32)(alpha)                         \
+    + (png_uint_32)(bg)*(65535                     \
+    - (png_uint_32)(alpha)) + 32768);              \
+    (composite) = (png_uint_16)(0xffff & ((temp + (temp >> 16)) >> 16)); \
+    }
+#define PNG_get_uint_32(buf) \
+    (((png_uint_32)(*(buf)) << 24) + \
+    ((png_uint_32)(*((buf) + 1)) << 16) + \
+    ((png_uint_32)(*((buf) + 2)) << 8) + \
+    ((png_uint_32)(*((buf) + 3))))
+#define PNG_get_uint_16(buf) \
+    ((png_uint_16) \
+    (((unsigned int)(*(buf)) << 8) + \
+    ((unsigned int)(*((buf) + 1)))))
+#define PNG_get_int_32(buf) \
+    ((png_int_32)((*(buf) & 0x80) \
+    ? -((png_int_32)(((png_get_uint_32(buf)^0xffffffffU)+1U)&0x7fffffffU)) \
+    : (png_int_32)png_get_uint_32(buf)))
 #define PNG_IMAGE_VERSION 1
 #define PNG_IMAGE_WARNING 1
 #define PNG_IMAGE_ERROR 2
@@ -538,18 +586,57 @@ typedef png_image *png_imagep;  // deprecated
 #define PNG_FORMAT_LINEAR_Y PNG_FORMAT_FLAG_LINEAR
 #define PNG_FORMAT_LINEAR_Y_ALPHA (PNG_FORMAT_FLAG_LINEAR|PNG_FORMAT_FLAG_ALPHA)
 #define PNG_FORMAT_LINEAR_RGB (PNG_FORMAT_FLAG_LINEAR|PNG_FORMAT_FLAG_COLOR)
+#define PNG_FORMAT_LINEAR_RGB_ALPHA \
+    (PNG_FORMAT_FLAG_LINEAR|PNG_FORMAT_FLAG_COLOR|PNG_FORMAT_FLAG_ALPHA)
 #define PNG_FORMAT_RGB_COLORMAP  (PNG_FORMAT_RGB|PNG_FORMAT_FLAG_COLORMAP)
 #define PNG_FORMAT_BGR_COLORMAP  (PNG_FORMAT_BGR|PNG_FORMAT_FLAG_COLORMAP)
 #define PNG_FORMAT_RGBA_COLORMAP (PNG_FORMAT_RGBA|PNG_FORMAT_FLAG_COLORMAP)
 #define PNG_FORMAT_ARGB_COLORMAP (PNG_FORMAT_ARGB|PNG_FORMAT_FLAG_COLORMAP)
 #define PNG_FORMAT_BGRA_COLORMAP (PNG_FORMAT_BGRA|PNG_FORMAT_FLAG_COLORMAP)
 #define PNG_FORMAT_ABGR_COLORMAP (PNG_FORMAT_ABGR|PNG_FORMAT_FLAG_COLORMAP)
+#define PNG_IMAGE_SAMPLE_CHANNELS(fmt)\
+    (((fmt)&(PNG_FORMAT_FLAG_COLOR|PNG_FORMAT_FLAG_ALPHA))+1)
+#define PNG_IMAGE_SAMPLE_COMPONENT_SIZE(fmt)\
+    ((((fmt) & PNG_FORMAT_FLAG_LINEAR) >> 2)+1)
+#define PNG_IMAGE_SAMPLE_SIZE(fmt)\
+    (PNG_IMAGE_SAMPLE_CHANNELS(fmt) * PNG_IMAGE_SAMPLE_COMPONENT_SIZE(fmt))
+#define PNG_IMAGE_MAXIMUM_COLORMAP_COMPONENTS(fmt)\
+    (PNG_IMAGE_SAMPLE_CHANNELS(fmt) * 256)
+#define PNG_IMAGE_PIXEL_(test,fmt)\
+    (((fmt)&PNG_FORMAT_FLAG_COLORMAP)?1:test(fmt))
+#define PNG_IMAGE_PIXEL_CHANNELS(fmt)\
+    PNG_IMAGE_PIXEL_(PNG_IMAGE_SAMPLE_CHANNELS,fmt)
+#define PNG_IMAGE_PIXEL_COMPONENT_SIZE(fmt)\
+    PNG_IMAGE_PIXEL_(PNG_IMAGE_SAMPLE_COMPONENT_SIZE,fmt)
 #define PNG_IMAGE_PIXEL_SIZE(fmt) PNG_IMAGE_PIXEL_(PNG_IMAGE_SAMPLE_SIZE,fmt)
+#define PNG_IMAGE_ROW_STRIDE(image)\
+    (PNG_IMAGE_PIXEL_CHANNELS((image).format) * (image).width)
+#define PNG_IMAGE_BUFFER_SIZE(image, row_stride)\
+    (PNG_IMAGE_PIXEL_COMPONENT_SIZE((image).format)*(image).height*(row_stride))
+#define PNG_IMAGE_SIZE(image)\
+    PNG_IMAGE_BUFFER_SIZE(image, PNG_IMAGE_ROW_STRIDE(image))
+#define PNG_IMAGE_COLORMAP_SIZE(image)\
+    (PNG_IMAGE_SAMPLE_SIZE((image).format) * (image).colormap_entries)
 #define PNG_IMAGE_FLAG_COLORSPACE_NOT_sRGB 0x01
 #define PNG_IMAGE_FLAG_FAST 0x02
 #define PNG_IMAGE_FLAG_16BIT_sRGB 0x04
+#define png_image_write_get_memory_size(image, size, convert_to_8_bit, buffer,\
+    row_stride, colormap)\
+    png_image_write_to_memory(&(image), 0, &(size), convert_to_8_bit, buffer,\
+    row_stride, colormap)
 #define PNG_IMAGE_DATA_SIZE(image) (PNG_IMAGE_SIZE(image)+(image).height)
 #define PNG_ZLIB_MAX_SIZE(b) ((b)+(((b)+7U)>>3)+(((b)+63U)>>6)+11U)
+#define PNG_IMAGE_COMPRESSED_SIZE_MAX(image)\
+    PNG_ZLIB_MAX_SIZE((png_alloc_size_t)PNG_IMAGE_DATA_SIZE(image))
+#define PNG_IMAGE_PNG_SIZE_MAX_(image, image_size)\
+    ((8U/*sig*/+25U/*IHDR*/+16U/*gAMA*/+44U/*cHRM*/+12U/*IEND*/+\
+    (((image).format&PNG_FORMAT_FLAG_COLORMAP)?/*colormap: PLTE, tRNS*/\
+    12U+3U*(image).colormap_entries/*PLTE data*/+\
+    (((image).format&PNG_FORMAT_FLAG_ALPHA)?\
+    12U/*tRNS*/+(image).colormap_entries:0U):0U)+\
+    12U)+(12U*((image_size)/PNG_ZBUF_SIZE))/*IDAT*/+(image_size))
+#define PNG_IMAGE_PNG_SIZE_MAX(image)\
+    PNG_IMAGE_PNG_SIZE_MAX_(image, PNG_IMAGE_COMPRESSED_SIZE_MAX(image))
 #define PNG_ARM_NEON 0
 #define PNG_MAXIMUM_INFLATE_WINDOW 2
 #define PNG_SKIP_sRGB_CHECK_PROFILE 4
@@ -563,9 +650,6 @@ typedef png_image *png_imagep;  // deprecated
 #define PNG_OPTION_INVALID 1
 #define PNG_OPTION_OFF     2
 #define PNG_OPTION_ON      3
-
-#define png_jmpbuf(png_ptr) \
-    (*png_set_longjmp_fn((png_ptr), longjmp, (sizeof (jmp_buf))))
 
 #define REMOVE_API(x)
 

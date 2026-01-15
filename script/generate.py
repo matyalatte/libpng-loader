@@ -217,11 +217,16 @@ class HeaderGenerator:
         macro, _ = split_in_two(macro, "/*")
         self.macros.append(macro)
 
+    def append_macro_multiline(self, macro):
+        macro, _ = split_in_two(macro, "//")
+        self.macros[-1] = self.macros[-1] + "\n    " + macro
+
     def read_png_h(self, filepath):
         with open(filepath, "r", encoding="utf-8") as infile:
             print(f"reading {filepath}...")
             in_comment = False
             in_macro = False
+            in_define_macro = False
             in_func = False
             in_struct = False
             in_ifdef = False
@@ -239,8 +244,11 @@ class HeaderGenerator:
                         in_comment = False
                     continue
                 if in_macro:
+                    if in_define_macro:
+                        self.append_macro_multiline(line)
                     if not line.endswith("\\"):
                         in_macro = False
+                        in_define_macro = False
                     continue
                 if line.startswith("//"):
                     continue
@@ -253,18 +261,20 @@ class HeaderGenerator:
                         in_else = False
                     continue
                 if line.startswith("#"):
+                    if line.startswith("#define"):
+                        self.append_macro(line[8:])
+                    elif line.startswith("#  define"):
+                        self.append_macro(line[10:])
                     if line.endswith("\\"):
                         in_macro = True
+                        if line.startswith("#define") or line.startswith("#  define"):
+                            in_define_macro = True
                         continue
                     if line.startswith("#ifdef") and ("SUPPORTED" in line):
                         in_ifdef = True
                     elif in_ifdef and line.startswith("#else"):
                         in_ifdef = False
                         in_else = True
-                    elif line.startswith("#define"):
-                        self.append_macro(line[8:])
-                    elif line.startswith("#  define"):
-                        self.append_macro(line[10:])
                     continue
                 if in_struct:
                     in_struct = struct_def.read(line)
