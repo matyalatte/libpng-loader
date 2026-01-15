@@ -494,10 +494,6 @@ typedef png_image *png_imagep;  // deprecated
 #define PNG_FREE_EXIF 0x8000U
 #define PNG_FREE_ALL  0xffffU
 #define PNG_FREE_MUL  0x4220U
-#define png_error(s1,s2) png_err(s1)
-#define png_chunk_error(s1,s2) png_err(s1)
-#define png_warning(s1,s2) ((void)(s1))
-#define png_chunk_warning(s1,s2) ((void)(s1))
 #define PNG_HANDLE_CHUNK_AS_DEFAULT   0
 #define PNG_HANDLE_CHUNK_NEVER        1
 #define PNG_HANDLE_CHUNK_IF_SAFE      2
@@ -702,7 +698,6 @@ typedef png_image *png_imagep;  // deprecated
     LIBPNG_MAP(png_free_default) \
     LIBPNG_MAP(png_error) \
     LIBPNG_MAP(png_chunk_error) \
-    LIBPNG_OPT(png_err) \
     LIBPNG_MAP(png_warning) \
     LIBPNG_MAP(png_chunk_warning) \
     LIBPNG_MAP(png_benign_error) \
@@ -979,7 +974,6 @@ typedef png_void * (*PFN_png_malloc_default)(const png_struct *, png_alloc_size_
 typedef void (*PFN_png_free_default)(const png_struct *, png_void *);
 typedef void (*PFN_png_error)(const png_struct *, const png_char *);
 typedef void (*PFN_png_chunk_error)(const png_struct *, const png_char *);
-typedef void (*PFN_png_err)(const png_struct *);
 typedef void (*PFN_png_warning)(const png_struct *, const png_char *);
 typedef void (*PFN_png_chunk_warning)(const png_struct *, const png_char *);
 typedef void (*PFN_png_benign_error)(const png_struct *, const png_char *);

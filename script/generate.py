@@ -224,6 +224,8 @@ class HeaderGenerator:
             in_macro = False
             in_func = False
             in_struct = False
+            in_ifdef = False
+            in_else = False
             func_def = FuncDef()
             struct_def = StructDef()
 
@@ -246,11 +248,20 @@ class HeaderGenerator:
                     if not line.endswith("*/"):
                         in_comment = True
                     continue
+                if in_else:
+                    if line.startswith("#endif"):
+                        in_else = False
+                    continue
                 if line.startswith("#"):
                     if line.endswith("\\"):
                         in_macro = True
                         continue
-                    if line.startswith("#define"):
+                    if line.startswith("#ifdef") and ("SUPPORTED" in line):
+                        in_ifdef = True
+                    elif in_ifdef and line.startswith("#else"):
+                        in_ifdef = False
+                        in_else = True
+                    elif line.startswith("#define"):
                         self.append_macro(line[8:])
                     elif line.startswith("#  define"):
                         self.append_macro(line[10:])
