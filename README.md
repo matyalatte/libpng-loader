@@ -72,7 +72,6 @@ The following functions may be `NULL` even after successfully loading libpng. Th
 
 You must check for `NULL` before calling any of these functions:
 
-- `png_err`
 - `png_get_cICP`
 - `png_set_cICP`
 - `png_get_cLLI`
