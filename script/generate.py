@@ -61,13 +61,12 @@ class FuncDef:
         self.reading_args = False
         self.skip_first_arg = False
 
-
     def append_arg(self, arg):
         arg_type, arg_name = rsplit_in_two(arg, " ")
         arg_type = type_normalize(arg_type)
         if arg_name.startswith("**"):
             arg_type += " **"
-        elif arg_name.startswith("*"):
+        elif arg_name.startswith("*") or "[" in arg_name:
             arg_type += " *"
         self.args.append(arg_type)
 

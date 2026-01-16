@@ -961,7 +961,7 @@ typedef void (*PFN_png_write_info_before_PLTE)(png_struct *, const png_info *);
 typedef void (*PFN_png_write_info)(png_struct *, const png_info *);
 typedef void (*PFN_png_read_info)(png_struct *, png_info *);
 typedef const png_char * (*PFN_png_convert_to_rfc1123)(png_struct *, const png_time *);
-typedef int (*PFN_png_convert_to_rfc1123_buffer)(char, const png_time *);
+typedef int (*PFN_png_convert_to_rfc1123_buffer)(char *, const png_time *);
 typedef void (*PFN_png_convert_from_struct_tm)(png_time *, const struct tm *);
 typedef void (*PFN_png_convert_from_time_t)(png_time *, time_t);
 typedef void (*PFN_png_set_expand)(png_struct *);
