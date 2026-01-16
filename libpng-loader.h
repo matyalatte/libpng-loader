@@ -310,14 +310,14 @@ typedef png_image *png_imagep;  // deprecated
 // ------ Macros ------
 
 #define PNG_H
-#define PNG_LIBPNG_VER_STRING "1.6.53"
+#define PNG_LIBPNG_VER_STRING "1.6.54"
 #define PNG_HEADER_VERSION_STRING " libpng version " PNG_LIBPNG_VER_STRING "\n"
 #define PNG_LIBPNG_VER_SHAREDLIB 16
 #define PNG_LIBPNG_VER_SONUM     PNG_LIBPNG_VER_SHAREDLIB
 #define PNG_LIBPNG_VER_DLLNUM    PNG_LIBPNG_VER_SHAREDLIB
 #define PNG_LIBPNG_VER_MAJOR   1
 #define PNG_LIBPNG_VER_MINOR   6
-#define PNG_LIBPNG_VER_RELEASE 53
+#define PNG_LIBPNG_VER_RELEASE 54
 #define PNG_LIBPNG_VER_BUILD 0
 #define PNG_LIBPNG_BUILD_ALPHA               1
 #define PNG_LIBPNG_BUILD_BETA                2
@@ -328,7 +328,7 @@ typedef png_image *png_imagep;  // deprecated
 #define PNG_LIBPNG_BUILD_PRIVATE 16
 #define PNG_LIBPNG_BUILD_SPECIAL 32
 #define PNG_LIBPNG_BUILD_BASE_TYPE PNG_LIBPNG_BUILD_STABLE
-#define PNG_LIBPNG_VER 10653
+#define PNG_LIBPNG_VER 10654
 #define PNG_LIBPNG_BUILD_TYPE \
     (PNG_LIBPNG_BUILD_BASE_TYPE | PNG_LIBPNG_BUILD_PRIVATE)
 #define png_libpng_ver png_get_header_ver(NULL)
@@ -483,8 +483,8 @@ typedef png_image *png_imagep;  // deprecated
 #define PNG_FILTER_HEURISTIC_WEIGHTED   2
 #define PNG_FILTER_HEURISTIC_LAST       3
 #define PNG_DESTROY_WILL_FREE_DATA 1
-#define PNG_SET_WILL_FREE_DATA 1
-#define PNG_USER_WILL_FREE_DATA 2
+#define PNG_SET_WILL_FREE_DATA     1
+#define PNG_USER_WILL_FREE_DATA    2
 #define PNG_FREE_HIST 0x0008U
 #define PNG_FREE_ICCP 0x0010U
 #define PNG_FREE_SPLT 0x0020U
