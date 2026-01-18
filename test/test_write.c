@@ -19,14 +19,6 @@ static int write_png(const char* filename) {
     }
     png_infop info = png_create_info_struct(png);
 
-    if (setjmp(png_jmpbuf(png))) {
-        // libpng jumped here due to an error
-        fprintf(stderr, "failed to output png image\n");
-        png_destroy_write_struct(&png, &info);
-        fclose(fp);
-        return 1;
-    }
-
     png_init_write_io(png, fp);
 
     // Set image attributes (8-bit color depth, RGBA)

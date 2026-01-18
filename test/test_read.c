@@ -25,14 +25,6 @@ static int read_png(const char* filename) {
     }
     png_infop info = png_create_info_struct(png);
 
-    if (setjmp(png_jmpbuf(png))) {
-        // libpng jumped here due to an error
-        fprintf(stderr, "failed to read png image\n");
-        png_destroy_read_struct(&png, &info, NULL);
-        fclose(fp);
-        return 1;
-    }
-
     png_init_read_io(png, fp);
     png_set_sig_bytes(png, (int)sig_size);
     png_read_png(png, info, PNG_TRANSFORM_PACKING | PNG_TRANSFORM_STRIP_16, NULL);

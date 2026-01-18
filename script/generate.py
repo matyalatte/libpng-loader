@@ -415,6 +415,8 @@ def get_args():
         # https://learn.microsoft.com/en-us/cpp/c-runtime-library/potential-errors-passing-crt-objects-across-dll-boundaries?view=msvc-170
         "stdio",
         "init_io",
+        # We should not call longjmp from libpng because it can cause invalid memory access
+        "jmp",
     ]
     parser.add_argument(
         "--remove_keywords",

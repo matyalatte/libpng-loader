@@ -58,13 +58,20 @@ The following functions are intentionally not exposed by libpng-loader.
 - `png_init_io`
 - `png_image_begin_read_from_stdio`
 - `png_image_write_to_stdio`
+- `png_set_longjmp_fn`
+- `png_longjmp`
 
-This is because passing `FILE*` across different C runtimes (especially on Windows) can cause heap corruption.
+This is because passing `FILE*` (or calling `longjmp`) across different C runtimes can cause heap corruption.
 
 See:
 https://learn.microsoft.com/en-us/cpp/c-runtime-library/potential-errors-passing-crt-objects-across-dll-boundaries?view=msvc-170
 
-For `png_init_io`, libpng-loader provides `png_init_write_io` and `png_init_read_io` instead.
+> [!note]
+> For `png_init_io`, libpng-loader provides `png_init_write_io` and `png_init_read_io` instead.
+
+> [!note]
+> libpng-loader does not support error handlings using `setjmp`.
+> Use simplified API (`png_image_*()`) if you do not want libpng to abort.
 
 ## Optional Functions
 

@@ -669,8 +669,8 @@ typedef png_image *png_imagep;  // deprecated
     LIBPNG_MAP(png_create_write_struct) \
     LIBPNG_MAP(png_get_compression_buffer_size) \
     LIBPNG_MAP(png_set_compression_buffer_size) \
-    LIBPNG_MAP(png_set_longjmp_fn) \
-    LIBPNG_MAP(png_longjmp) \
+    REMOVE_API(png_set_longjmp_fn) \
+    REMOVE_API(png_longjmp) \
     LIBPNG_MAP(png_reset_zstream) \
     LIBPNG_MAP(png_create_read_struct_2) \
     LIBPNG_MAP(png_create_write_struct_2) \
