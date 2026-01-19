@@ -69,10 +69,6 @@ https://learn.microsoft.com/en-us/cpp/c-runtime-library/potential-errors-passing
 > [!note]
 > For `png_init_io`, libpng-loader provides `png_init_write_io` and `png_init_read_io` instead.
 
-> [!note]
-> libpng-loader does not support error handlings using `setjmp`.
-> Use simplified API (`png_image_*()`) if you do not want libpng to abort.
-
 ## Optional Functions
 
 The following functions may be `NULL` even after successfully loading libpng. This typically depends on the libpng version available at runtime.
