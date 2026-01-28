@@ -4,14 +4,47 @@
 #else
 #include <dlfcn.h>
 #include <string.h>
-#endif
+#ifdef PNGLOADER_THREAD_SAFE
+#include <pthread.h>
+#endif  // PNGLOADER_THREAD_SAFE
+#endif  // _WIN32
 #ifdef __linux__
 #include <unistd.h>
 #endif
 
+// global variables
 static void* libpng_ptr = NULL;
 static char libpng_ver_str[16] = {0};
 #define LIBPNG_VER_STR_SIZE (sizeof(libpng_ver_str) / sizeof(char))
+
+// functions for mutex lock
+#ifdef PNGLOADER_THREAD_SAFE
+#ifdef _WIN32
+static SRWLOCK mutex = SRWLOCK_INIT;
+static inline void libpng_mutex_lock(void) {
+    AcquireSRWLockExclusive(&mutex);
+}
+static inline void libpng_mutex_unlock(void) {
+    ReleaseSRWLockExclusive(&mutex);
+}
+#else  // _WIN32
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static inline void libpng_mutex_lock(void) {
+    pthread_mutex_lock(&mutex);
+}
+static inline void libpng_mutex_unlock(void) {
+    pthread_mutex_unlock(&mutex);
+}
+#endif  // _WIN32
+#else  // PNGLOADER_THREAD_SAFE
+static inline void libpng_mutex_lock(void) {}
+static inline void libpng_mutex_unlock(void) {}
+#endif // PNGLOADER_THREAD_SAFE
+
+// libpng_free() without mutex lock
+static void libpng_free_unsafe(void);
+// libpng_print_missing_functions() without mutex lock
+static void libpng_print_missing_functions_unsafe(FILE *stream, int show_optional);
 
 // copies the version string to libpng_ver_str
 static void copy_to_libpng_ver_str(const char* ver_str) {
@@ -142,7 +175,8 @@ static void load_functions(void) {
 
 static libpng_load_error libpng_load_base(const char* file, libpng_load_flags flags) {
     int print_errors = flags & LIBPNG_LOAD_FLAGS_PRINT_ERRORS;
-    if (libpng_is_loaded()) {
+
+    if (libpng_ptr != NULL) {
         if (print_errors)
             fprintf(stderr, "LIBPNG_ERROR: libpng is loaded already.\n");
         return LIBPNG_ERROR_LOADED_ALREADY;
@@ -180,7 +214,7 @@ static libpng_load_error libpng_load_base(const char* file, libpng_load_flags fl
 
     load_functions();
     if (!png_get_libpng_ver) {
-        libpng_free();
+        libpng_free_unsafe();
         if (print_errors)
             fprintf(stderr, "LIBPNG_ERROR: png_get_libpng_ver is missing.\n");
         return LIBPNG_ERROR_FUNCTION_NOT_FOUND;
@@ -200,7 +234,7 @@ static libpng_load_error libpng_load_base(const char* file, libpng_load_flags fl
                 PNG_LIBPNG_VER_MAJOR,
                 PNG_LIBPNG_VER_MINOR);
         }
-        libpng_free();
+        libpng_free_unsafe();
         return LIBPNG_ERROR_VERSION_MISMATCH;
     }
 
@@ -208,9 +242,9 @@ static libpng_load_error libpng_load_base(const char* file, libpng_load_flags fl
             !functions_are_loaded()) {
         if (print_errors) {
             fprintf(stderr, "LIBPNG_ERROR: ");
-            libpng_print_missing_functions(stderr, 0);
+            libpng_print_missing_functions_unsafe(stderr, 0);
         }
-        libpng_free();
+        libpng_free_unsafe();
         return LIBPNG_ERROR_FUNCTION_NOT_FOUND;
     }
 
@@ -218,16 +252,23 @@ static libpng_load_error libpng_load_base(const char* file, libpng_load_flags fl
 }
 
 libpng_load_error libpng_load(libpng_load_flags flags) {
-    return libpng_load_base(NULL, flags);
+    libpng_mutex_lock();
+    libpng_load_error err = libpng_load_base(NULL, flags);
+    libpng_mutex_unlock();
+    return err;
 }
 
 libpng_load_error libpng_load_from_path(const char* file, libpng_load_flags flags) {
     if (!file)
         return LIBPNG_ERROR_NULL_REFERENCE;
-    return libpng_load_base(file, flags);
+
+    libpng_mutex_lock();
+    libpng_load_error err = libpng_load_base(file, flags);
+    libpng_mutex_unlock();
+    return err;
 }
 
-void libpng_free(void) {
+static void libpng_free_unsafe(void) {
     // set NULL to all function pointers.
     #define LIBPNG_MAP(func_ptr) func_ptr = NULL;
     #define LIBPNG_OPT(func_ptr) LIBPNG_MAP(func_ptr);
@@ -240,23 +281,33 @@ void libpng_free(void) {
     libpng_ptr = NULL;
 }
 
+void libpng_free(void) {
+    libpng_mutex_lock();
+    libpng_free_unsafe();
+    libpng_mutex_unlock();
+}
+
 int libpng_is_loaded(void) {
-    return (libpng_ptr == NULL) ? 0 : 1;
+    libpng_mutex_lock();
+    int ret = (libpng_ptr == NULL) ? 0 : 1;
+    libpng_mutex_unlock();
+    return ret;
 }
 
 const char* libpng_get_user_ver(void) {
-    if (png_get_libpng_ver)
-        return png_get_libpng_ver(NULL);
+    libpng_mutex_lock();
+    const char* ver = "0.0.0";
     if (libpng_ver_str[0] != '\0')
-        return libpng_ver_str;
-    return "0.0.0";
+        ver = libpng_ver_str;
+    libpng_mutex_unlock();
+    return ver;
 }
 
 const char* libpng_get_loader_ver(void) {
     return PNG_LIBPNG_VER_STRING;
 }
 
-void libpng_print_missing_functions(FILE *stream, int show_optional) {
+static void libpng_print_missing_functions_unsafe(FILE *stream, int show_optional) {
     fprintf(stream, "missing functions:\n");
     int missing = 0;
     #define LIBPNG_MAP(func) \
@@ -271,6 +322,12 @@ void libpng_print_missing_functions(FILE *stream, int show_optional) {
 
     if (missing == 0)
         fprintf(stream, "  (none)");
+}
+
+void libpng_print_missing_functions(FILE *stream, int show_optional) {
+    libpng_mutex_lock();
+    libpng_print_missing_functions_unsafe(stream, show_optional);
+    libpng_mutex_unlock();
 }
 
 static void png_default_read_data(png_struct *png_ptr, png_byte *data, size_t length) {

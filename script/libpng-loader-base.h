@@ -10,6 +10,12 @@
 // ------ Loader's API ------
 
 /**
+ * To enable thread safety, define the `PNGLOADER_THREAD_SAFE` macro.
+ * This adds a single, shared mutex that is used by all `libpng_*` functions.
+ */
+// #define PNGLOADER_THREAD_SAFE
+
+/**
  * Configuration for `libpng_load()`.
  *
  * @enum libpng_load_flags
@@ -97,6 +103,8 @@ int libpng_is_loaded(void);
  *
  * @note: The `xx.yy` part should be the same as `libpng_get_loader_ver()`
  *        to get `libpng_load()` to work.
+ *
+ * @note: The returned buffer can be overwritten by `libpng_load()`.
  *
  * @returns A string that represents the version of user's libpng.
  */

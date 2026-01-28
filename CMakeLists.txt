@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 project(libpng-loader LANGUAGES C)
 
 option(PNGLOADER_TESTS "Build tests" ON)
+option(PNGLOADER_THREAD_SAFE "Make all libpng_* functions thread safe" ON)
 
 # Warnings for unsupported environments
 if(NOT (WIN32 OR APPLE OR LINUX))
@@ -23,8 +24,17 @@ target_include_directories(libpng-loader PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
     $<INSTALL_INTERFACE:include>
 )
+if (PNGLOADER_THREAD_SAFE)
+    target_compile_definitions(libpng-loader PUBLIC PNGLOADER_THREAD_SAFE)
+endif()
 if (NOT WIN32)
     target_link_libraries(libpng-loader PUBLIC ${CMAKE_DL_LIBS})
+    if (PNGLOADER_THREAD_SAFE)
+        # link pthread
+        set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+        find_package(Threads REQUIRED)
+        target_link_libraries(libpng-loader PRIVATE Threads::Threads)
+    endif()
 endif()
 
 # Remove "lib" from the library name because your toolchain adds it.
