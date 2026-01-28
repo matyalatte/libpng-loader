@@ -83,9 +83,14 @@ int main(void) {
     }
 
     // Try to load libpng twice
-    err = libpng_load_from_path("./libpng-dummy" LIB_EXT, LIBPNG_LOAD_FLAGS_PRINT_ERRORS);
+    err = libpng_load_from_path("./libpng-dummy" LIB_EXT, LIBPNG_LOAD_FLAGS_PRINT_ERRORS | LIBPNG_LOAD_FLAGS_FAIL_IF_LOADED);
     if (err != LIBPNG_ERROR_LOADED_ALREADY) {
         fprintf(stderr, "libpng_load: not LIBPNG_ERROR_LOADED_ALREADY: %d\n", err);
+        return 1;
+    }
+    err = libpng_load_from_path("./libpng-dummy" LIB_EXT, LIBPNG_LOAD_FLAGS_PRINT_ERRORS);
+    if (err != LIBPNG_SUCCESS) {
+        fprintf(stderr, "libpng_load: not LIBPNG_SUCCESS: %d\n", err);
         return 1;
     }
 

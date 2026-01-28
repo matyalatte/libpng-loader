@@ -26,6 +26,7 @@ enum {
     LIBPNG_LOAD_FLAGS_VERSION_CHECK = 1,  //!< Check the version string of user's libpng.
     LIBPNG_LOAD_FLAGS_FUNCTION_CHECK = 2,  //!< Ensure all function pointers are non-NULL.
     LIBPNG_LOAD_FLAGS_PRINT_ERRORS = 4,  //!< Output error messages to stderr.
+    LIBPNG_LOAD_FLAGS_FAIL_IF_LOADED = 8,  //!< Return LIBPNG_ERROR_LOADED_ALREADY when libpng is loaded already
 };
 #define LIBPNG_LOAD_FLAGS_DEFAULT ( \
     LIBPNG_LOAD_FLAGS_VERSION_CHECK | \

@@ -177,6 +177,8 @@ static libpng_load_error libpng_load_base(const char* file, libpng_load_flags fl
     int print_errors = flags & LIBPNG_LOAD_FLAGS_PRINT_ERRORS;
 
     if (libpng_ptr != NULL) {
+        if (!(flags & LIBPNG_LOAD_FLAGS_FAIL_IF_LOADED))
+            return LIBPNG_SUCCESS;
         if (print_errors)
             fprintf(stderr, "LIBPNG_ERROR: libpng is loaded already.\n");
         return LIBPNG_ERROR_LOADED_ALREADY;
