@@ -11,6 +11,9 @@ endfunction()
 add_png_test(TestRead test_read)
 add_png_test(TestWrite test_write)
 add_png_test(TestLoadFail test_load_fail)
+if (PNGLOADER_THREAD_SAFE)
+    add_png_test(TestThreading test_threading)
+endif()
 add_custom_command(
     TARGET test_read POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/input.png" $<TARGET_FILE_DIR:test_read>
