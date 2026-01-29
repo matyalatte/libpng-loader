@@ -42,16 +42,14 @@ add_custom_command(
 
 # compile a dummy library for a different architecture
 if (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "(x86_64|amd64|AMD64|x64)")
-    if (WIN32)
-        set(PNGLOADER_CROSS_ARCH "ARM64")
-    elseif(APPLE)
+    if (WIN32 OR APPLE)
         set(PNGLOADER_CROSS_ARCH "arm64")
     else()
         set(PNGLOADER_CROSS_ARCH "aarch64")
     endif()
 else()
     if (WIN32)
-        set(PNGLOADER_CROSS_ARCH "AMD64")
+        set(PNGLOADER_CROSS_ARCH "x64")
     else()
         set(PNGLOADER_CROSS_ARCH "x86_64")
     endif()

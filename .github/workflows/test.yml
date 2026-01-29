@@ -12,21 +12,37 @@ jobs:
     runs-on: ${{ matrix.platform }}
     strategy:
       matrix:
-        platform: [
-          "windows-latest",
-          "ubuntu-latest",
-          "macos-latest",
-        ]
+        include:
+          - platform: ubuntu-latest
+            install: |
+              sudo apt-get update
+              sudo apt-get install -y libpng-dev gcc-aarch64-linux-gnu
+
+          - platform: ubuntu-24.04-arm
+            install: |
+              sudo apt-get update
+              sudo apt-get install -y libpng-dev gcc-x86-64-linux-gnu
+
+          - platform: windows-latest
+            install: |
+              vcpkg install libpng:x64-windows
+              echo "C:\vcpkg\installed\x64-windows\bin" >> $env:GITHUB_PATH
+
+          - platform: windows-11-arm
+            install: |
+              vcpkg install libpng:arm64-windows
+              echo "C:\vcpkg\installed\arm64-windows\bin" >> $env:GITHUB_PATH
+
+          - platform: macos-latest
+            install: ""
+
+          - platform: macos-15-intel
+            install: ""
     steps:
       - uses: actions/checkout@v4
 
-      - if: runner.os=='Linux'
-        run: sudo apt-get install libpng-dev gcc-aarch64-linux-gnu
-
-      - if: runner.os=='Windows'
-        run: |
-          vcpkg install libpng:x64-windows
-          echo "C:\vcpkg\installed\x64-windows\bin" >> $env:GITHUB_PATH
+      - if: matrix.install != ''
+        run: ${{ matrix.install }}
 
       - run: |
           cmake -S . -B build
