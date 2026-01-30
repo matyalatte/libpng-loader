@@ -5,17 +5,8 @@
 #   3. It generates "libpng-loader-generated.h" in the same directory as generate.py
 
 import argparse
-from enum import Enum, auto
 import os
 
-class MacroType(Enum):
-    UNKNOWN = 0
-    CALLBACK = auto()
-    FUNCTION = auto()
-    EXPORT = auto()
-    EXPORTA = auto()
-    FP_EXPORT = auto()
-    FIXED_EXPORT = auto()
 
 def split_in_two(line, c):
     ret = line.split(c, 1)
@@ -23,11 +14,85 @@ def split_in_two(line, c):
         return ret[0].strip(), ""
     return ret[0].strip(), ret[1].strip()
 
+
 def rsplit_in_two(line, c):
     ret = line.rsplit(c, 1)
     if len(ret) == 1:
         return ret[0].strip(), ""
     return ret[0].strip(), ret[1].strip()
+
+
+def contain_one_of_items(s, items):
+    for i in items:
+        if i in s:
+            return True
+    return False
+
+
+def trim_space_and_comment(file, line):
+    line = line.replace('\t', ' ')
+    line, _ = split_in_two(line, "//")
+    if line.count("\"") % 2 != 0:
+        raise RuntimeError("There is \"//\" in a C string. This is unexpected.")
+
+    if "/*" in line:
+        line, rest = rsplit_in_two(line, "/*")
+        if "*/" in rest:
+            # The comment block (/* */) is a single line
+            _, rest = split_in_two(line, "*/")
+            if rest != "":
+                raise RuntimeError(
+                    "The last line of multi-line comment does not end with \"*/\". "
+                    "This is unexpected.")
+        else:
+            while True:
+                # skip multi-line comment
+                comment = file.readline()
+                if comment == "":
+                    break
+                if "*/" in comment:
+                    _, rest = split_in_two(comment, "*/")
+                    if rest != "":
+                        raise RuntimeError(
+                            "The last line of multi-line comment does not end with \"*/\". "
+                            "This is unexpected.")
+                    break
+    line = line.strip()
+    return line
+
+
+def skip_to_endif(file):
+    # skip to #endif
+    while True:
+        line = file.readline()
+        if line == "":
+            break
+        line = line.strip()
+        if line.startswith("#endif"):
+            break
+
+
+def read_lines_to_char(file, first_line, c):
+    string = first_line
+    while True:
+        if string.endswith(c):
+            break
+        # Read more lines
+        line = file.readline()
+        line = trim_space_and_comment(file, line)
+        if line == "":
+            continue
+        string += " " + line
+    return string
+
+
+def read_lines_to_semicolon(file, first_line):
+    return read_lines_to_char(file, first_line, ";")
+
+
+def read_lines_to_right_paren(file, first_line):
+    return read_lines_to_char(file, first_line, ")")
+
 
 def type_normalize(t):
     if t.endswith("charp"):
@@ -48,279 +113,231 @@ def type_normalize(t):
         t = t[:-13]
     return t
 
-class FuncDef:
+
+class Macro:
     def __init__(self):
-        self.macro_type = MacroType.UNKNOWN
-        self.ordinal = None
-        self.return_type = None
-        self.name = None
-        self.args = None
-        self.is_optional = False
-        self.is_removed = False
+        self.first_line = ""
+        self.lines = []
 
-        self.reading_args = False
-        self.skip_first_arg = False
-
-    def append_arg(self, arg):
-        arg_type, arg_name = rsplit_in_two(arg, " ")
-        arg_type = type_normalize(arg_type)
-        if arg_name.startswith("**"):
-            arg_type += " **"
-        elif arg_name.startswith("*") or "[" in arg_name:
-            arg_type += " *"
-        self.args.append(arg_type)
-
-    def is_callback(self):
-        return self.macro_type == MacroType.CALLBACK or self.macro_type == MacroType.FUNCTION
-
-    def get_typedef(self):
-        if self.is_callback():
-            name = self.name
-        else:
-            name = "*PFN_" + self.name
-        return f"typedef {self.return_type} ({name})({", ".join(self.args)});"
-
-    def read(self, line):
-        if self.macro_type == MacroType.UNKNOWN:
-            macro, line = split_in_two(line, "(")
-            match macro:
-                case "typedef PNG_CALLBACK":
-                    self.macro_type = MacroType.CALLBACK
-                case "PNG_FUNCTION":
-                    self.macro_type = MacroType.FUNCTION
-                case "PNG_EXPORT":
-                    self.macro_type = MacroType.EXPORT
-                case "PNG_EXPORTA":
-                    self.macro_type = MacroType.EXPORTA
-                case "PNG_FP_EXPORT":
-                    self.macro_type = MacroType.FP_EXPORT
-                case "PNG_FIXED_EXPORT":
-                    self.macro_type = MacroType.FIXED_EXPORT
-        if not self.is_callback() and self.ordinal is None:
+    def read(self, file, first_line):
+        # first_line = "#define ..."
+        #           or "#  define ..."
+        if first_line.startswith("#  "):
+            first_line = "#" + first_line[3:]
+        if not first_line.endswith("\\"):
+            # single line macro
+            first_line = first_line[8:]
+            name, rest = split_in_two(first_line, " ")
+            if rest == "":
+                self.first_line = f"#define {name}"
+            else:
+                self.first_line = f"#define {name} {rest}"
+            return
+        # multi-line macro
+        self.first_line = first_line[:-1].strip() + " \\"
+        while True:
+            line = file.readline()
             if line == "":
-                return True
-            self.ordinal, line = split_in_two(line, ",")
-        if self.return_type is None:
-            if line == "":
-                return True
-            ret_type, line = split_in_two(line, ",")
-            self.return_type = type_normalize(ret_type)
-        if self.name is None:
-            if line == "":
-                return True
-            self.name, line = split_in_two(line, ",")
-            if self.macro_type == MacroType.FUNCTION:
-                _, self.name = split_in_two(self.name, " ")
-                self.name = self.name[:-1]
-        if self.args is None:
-            self.args = []
-            self.reading_args = True
-        if self.reading_args:
-            line = line.lstrip("(")
-            if line == "":
-                return True
-            while self.reading_args:
-                if line == "":
-                    return True
-                flag = False
-                for i in range(0, len(line)):
-                    if line[i] == ",":
-                        arg, line = split_in_two(line, ",")
-                        if self.skip_first_arg:
-                            self.skip_first_arg = False
-                        else:
-                            self.append_arg(arg)
-                        flag = True
-                        break
-                    if line[i] == ")":
-                        arg, line = split_in_two(line, ")")
-                        if self.skip_first_arg:
-                            self.skip_first_arg = False
-                        else:
-                            self.append_arg(arg)
-                        flag = True
-                        self.reading_args = False
-                        break
-                if not flag:
-                    self.append_arg(line)
-                    self.skip_first_arg = True
-                    return True
-        return False
+                break
+            line = line.strip().replace(" * ", " *")
+            last_line = not line.endswith("\\")
+            if not last_line:
+                line = line[:-1].strip()
+            if line.endswith("*/"):
+                line, _ = rsplit_in_two(line, "/*")
+            self.lines.append(line)
+            if last_line:
+                break
+
+    def to_str(self):
+        string = self.first_line + "\n"
+        if len(self.lines) == 0:
+            return string
+        for l in self.lines[:-1]:
+            string += f"    {l} \\\n"
+        string += f"    {self.lines[-1]}\n"
+        return string
+
+
+class Var:
+    def __init__(self, ty, name):
+        self.ty = type_normalize(ty)
+        if name.startswith("**"):
+            self.ty += " **"
+            name = name[2:]
+        if name.startswith("*"):
+            self.ty += " *"
+            name = name[1:]
+        self.name = name
+
+    def to_str(self):
+        if self.name == "":
+            return self.ty
+        if self.ty.endswith("*"):
+            return self.ty + self.name
+        return f"{self.ty} {self.name}"
+
 
 class StructDef:
     def __init__(self):
-        self.first_line = None
-        self.members = None
-        self.name = None
-        self.reading_members = False
+        self.struct_name = ""
+        self.name = ""
+        self.members = []
+        self.macros = []
 
-    def read(self, line):
-        if self.first_line is None:
-            self.first_line = line
-            return True
-        if self.members is None:
-            self.members = []
-            self.reading_members = True
-            return True
-        if line.startswith("}"):
-            self.reading_members = False
-            line = line[1:]
-        if self.reading_members:
-            if ";" in line:
-                line, _ = split_in_two(line, ";")
-            else:
-                return True
-            member_type, member_name = split_in_two(line, " ")
-            member_type = type_normalize(member_type)
-            self.members.append([member_type, member_name])
-            return True
-        if self.name is None:
+    def read(self, file, first_line):
+        # typedef struct struct_name
+        # {
+        # } name, ***;
+        self.struct_name = first_line[14:].strip()
+        _ = file.readline()
+
+        while True:
+            line = file.readline()
             if line == "":
-                return True
-            self.name, _ = split_in_two(line, ";")
-            self.name, _ = split_in_two(self.name, ",")
-        return False
+                break
+            line = trim_space_and_comment(file, line)
+            if line == "":
+                continue
+            if line.startswith("#define") or line.startswith("#  define"):
+                macro = Macro()
+                macro.read(file, line)
+                self.macros.append(macro)
+                continue
+            line = read_lines_to_semicolon(file, line)
+            if line.startswith("}"):
+                # line = "} struct_name;" or "} name, name_p;"
+                _, line = split_in_two(line[:-1], " ")
+                self.name, _ = split_in_two(line, ",")
+                if " " in self.name:
+                    raise RuntimeError(f"Unexpected struct name. ({self.name})")
+                return
 
-    def get_typedef(self):
-        typedef_str = self.first_line + " {\n"
-        for member in self.members:
-            typedef_str += f"    {member[0]} {member[1]};\n"
-        typedef_str += "} " + self.name + ";\n"
-        return typedef_str
+            # line = "member_type member_name;"
+            member_type, member_name = rsplit_in_two(line[:-1], " ")
+            self.members.append(Var(member_type, member_name))
 
-def contain_one_of_items(s, items):
-    for i in items:
-        if i in s:
-            return True
-    return False
+    def to_str(self):
+        member_str = "".join([f"    {member.to_str()};\n" for member in self.members])
+        if self.struct_name == "":
+            first_line = "typedef struct {\n"
+        else:
+            first_line = "typedef struct " + self.struct_name + " {\n"
+        return first_line + member_str + "} " + self.name + ";\n"
+
+
+class FuncDef:
+    def __init__(self):
+        self.return_type = ""
+        self.name = ""
+        self.args = []
+
+    def read(self, file, first_line):
+        # typedef PNG_CALLBACK(return_type, name, (arg_type0 arg_name0, arg_type1 arg_name1, ...));"
+        # PNG_EXPORT(ord, return_type, name, (arg_type0 arg_name0, arg_type1 arg_name1, ...));"
+        # PNG_EXPORTA(ord, return_type, name, (arg_type0 arg_name0, arg_type1 arg_name1, ...), attr);"
+        # PNG_FP_EXPORT(ord, return_type, name, (arg_type0 arg_name0, arg_type1 arg_name1, ...))"
+        # PNG_FIXDED_EXPORT(ord, return_type, name, (arg_type0 arg_name0, arg_type1 arg_name1, ...))"
+
+        if first_line.startswith("PNG_FP_") or first_line.startswith("PNG_FIXED_"):
+            def_str = read_lines_to_right_paren(file, first_line)
+        else:
+            def_str = read_lines_to_semicolon(file, first_line)
+            def_str = def_str[:-1]
+        def_str = def_str[:-1]
+        if first_line.startswith("PNG_EXPORTA") or first_line.startswith("PNG_FUNCTION"):
+            def_str, _ = rsplit_in_two(def_str, ",")
+        _, def_str = split_in_two(def_str, "(")
+        if not first_line.startswith("typedef") and not first_line.startswith("PNG_FUNCTION"):
+            _, def_str = split_in_two(def_str, ",")
+
+        # read return type
+        # def_str = "return_type, name, (arg_type0 arg_name0, arg_type1 arg_name1, ...)"
+        ret_type, def_str = split_in_two(def_str, ",")
+        self.return_type = type_normalize(ret_type)
+
+        # read function name
+        name, def_str = split_in_two(def_str, ",")
+        if (name.startswith("(")):
+            _, name = split_in_two(name[:-1], " ")
+        self.name = name
+        def_str = def_str[1:-1]
+
+        # def_str = "arg_type0 arg_name0, arg_type1 arg_name1, ..."
+        while True:
+            arg, def_str = split_in_two(def_str, ",")
+            if arg == "":
+                break
+            arg_type, arg_name = rsplit_in_two(arg, " ")
+            if "[" in arg_name:
+                arg_name, _ = split_in_two(arg_name, "[")
+                arg_name = "*" + arg_name
+            self.args.append(Var(arg_type, arg_name))
+
+    def to_str(self):
+        args_as_str = ", ".join([arg.to_str() for arg in self.args])
+        return f"{self.return_type} {self.name}({args_as_str});"
+
+    def to_callback_str(self):
+        args_as_str = ", ".join([arg.ty for arg in self.args])
+        return f"typedef {self.return_type} ({self.name})({args_as_str});"
+
+    def to_pfn_str(self):
+        args_as_str = ", ".join([arg.ty for arg in self.args])
+        return f"typedef {self.return_type} (*PFN_{self.name})({args_as_str});"
+
 
 class HeaderGenerator:
     def __init__(self, optional_keywords, remove_keywords, optional_functions, remove_functions):
-        self.callbacks = []
-        self.api_functions = []
-        self.structs = []
-        self.macros = []
+        self.clear()
         self.optional_keywords = optional_keywords
         self.remove_keywords = remove_keywords
         self.optional_functions = optional_functions
         self.remove_functions = remove_functions
 
-    def append_func(self, func):
-        if func.is_callback():
-            self.callbacks.append(func)
-        else:
-            self.api_functions.append(func)
+    def clear(self):
+        self.macros = []
+        self.structs = []
+        self.callbacks = []
+        self.functions = []
 
-    def append_macro(self, macro):
-        macro, _ = split_in_two(macro, "//")
-        macro, _ = split_in_two(macro, "/*")
-        self.macros.append(macro)
-
-    def append_macro_multiline(self, macro):
-        macro, _ = split_in_two(macro, "//")
-        self.macros[-1] = self.macros[-1] + "\n    " + macro
-
-    def read_png_h(self, filepath):
-        with open(filepath, "r", encoding="utf-8") as infile:
-            print(f"reading {filepath}...")
-            in_comment = False
-            in_macro = False
-            in_define_macro = False
-            in_func = False
-            in_struct = False
-            in_ifdef = False
-            in_else = False
-            func_def = FuncDef()
-            struct_def = StructDef()
-
+    def read_png_h(self, png_h):
+        self.clear()
+        with open(png_h, "r", encoding="utf-8") as file:
+            print(f"reading {png_h}...")
             while True:
-                line = infile.readline()
+                line = file.readline()
                 if line == "":
                     break
-                line = line.strip()
-                if in_comment:
-                    if line.endswith("*/"):
-                        in_comment = False
-                    continue
-                if in_macro:
-                    if in_define_macro:
-                        self.append_macro_multiline(line)
-                    if not line.endswith("\\"):
-                        in_macro = False
-                        in_define_macro = False
-                    continue
-                if line.startswith("//"):
-                    continue
-                if line.startswith("/*"):
-                    if not line.endswith("*/"):
-                        in_comment = True
-                    continue
-                if in_else:
-                    if line.startswith("#endif"):
-                        in_else = False
-                    continue
-                if line.startswith("#"):
-                    if line.startswith("#define"):
-                        self.append_macro(line[8:])
-                    elif line.startswith("#  define"):
-                        self.append_macro(line[10:])
-                    if line.endswith("\\"):
-                        in_macro = True
-                        if line.startswith("#define") or line.startswith("#  define"):
-                            in_define_macro = True
-                        continue
-                    if line.startswith("#ifdef") and ("SUPPORTED" in line):
-                        in_ifdef = True
-                    elif in_ifdef and line.startswith("#else"):
-                        in_ifdef = False
-                        in_else = True
-                    continue
-                if in_struct:
-                    in_struct = struct_def.read(line)
-                    if not in_struct:
-                        self.structs.append(struct_def)
-                        struct_def = StructDef()
-                    continue
-                if line.startswith("typedef struct"):
-                    if not line.endswith(";"):
-                        in_struct = struct_def.read(line)
-                    continue
-                if in_func:
-                    in_func = func_def.read(line)
-                    if not in_func:
-                        self.append_func(func_def)
-                        func_def = FuncDef()
-                    continue
-                if (line.startswith("typedef PNG_CALLBACK") or
-                    line.startswith("PNG_FUNCTION") or
-                    line.startswith("PNG_EXPORT") or
-                    line.startswith("PNG_FP_EXPORT") or
-                    line.startswith("PNG_FIXED_EXPORT")):
-                    in_func = func_def.read(line)
-                    if not in_func:
-                        self.append_func(func_def)
-                        func_def = FuncDef()
-            print(f"found {len(self.callbacks)} callbacks.")
-            print(f"found {len(self.api_functions)} functions.")
-            print(f"found {len(self.structs)} structs.")
-            print(f"found {len(self.macros)} macros.")
-            for func in self.api_functions:
-                if (contain_one_of_items(func.name, self.optional_keywords) or
-                    func.name in self.optional_functions):
-                    func.is_optional = True
-                if (contain_one_of_items(func.name, self.remove_keywords) or
-                    func.name in self.remove_functions):
-                    func.is_removed = True
-            optionals = [func for func in self.api_functions if func.is_optional]
-            if len(optionals) > 0:
-                print("The following functions were marked as optional. They can be null at runtime.")
-                for func in optionals:
-                    print(f"  {func.name}")
-            removed = [func for func in self.api_functions if func.is_removed]
-            if len(removed) > 0:
-                print("The following functions were removed from libpng-loader.")
-                for func in removed:
-                    print(f"  {func.name}")
+                line = trim_space_and_comment(file, line)
+                if line.startswith("#else"):
+                    skip_to_endif(file)
+                elif line.startswith("#define") or line.startswith("#  define"):
+                    macro = Macro()
+                    macro.read(file, line)
+                    self.macros.append(macro)
+                elif "typedef struct" in line and not line.endswith(";"):
+                    struct = StructDef()
+                    struct.read(file, line)
+                    self.macros += struct.macros
+                    self.structs.append(struct)
+                if (line.startswith("PNG_FUNCTION(") or
+                    line.startswith("typedef PNG_CALLBACK(")):
+                    func = FuncDef()
+                    func.read(file, line)
+                    self.callbacks.append(func)
+                if (line.startswith("PNG_EXPORT(") or
+                    line.startswith("PNG_EXPORTA(") or
+                    line.startswith("PNG_FP_EXPORT(") or
+                    line.startswith("PNG_FIXED_EXPORT(")):
+                    func = FuncDef()
+                    func.read(file, line)
+                    self.functions.append(func)
+
+        print(f"Found {len(self.macros)} macros.")
+        print(f"Found {len(self.structs)} structs.")
+        print(f"Found {len(self.callbacks)} callbacks.")
+        print(f"Found {len(self.functions)} functions.")
 
     def write_loader_h(self, basepath, outpath):
         with open(basepath, "r", encoding="utf-8") as infile:
@@ -340,7 +357,7 @@ class HeaderGenerator:
 
             outfile.write("// public structs\n")
             for st in self.structs:
-                outfile.write(st.get_typedef())
+                outfile.write(st.to_str())
                 outfile.write(
                     "\n"
                     f"typedef {st.name} *{st.name}p;  // deprecated\n"
@@ -350,7 +367,7 @@ class HeaderGenerator:
             outfile.write(macro_line + "\n")
 
             for m in self.macros:
-                outfile.write(f"#define {m}\n")
+                outfile.write(m.to_str())
 
             for i in range(0, len(base_lines)):
                 line = base_lines[i]
@@ -362,13 +379,19 @@ class HeaderGenerator:
                 "    REMOVE_API(png_plz_ignore_this_line)"
             )
 
-            for func in self.api_functions:
-                if func.is_optional:
-                    # libpng-loader should not force this function to be exist
-                    outfile.write(f" \\\n    LIBPNG_OPT({func.name})")
-                elif func.is_removed:
+            def is_optional(name):
+                return name in self.optional_functions or contain_one_of_items(name, self.optional_keywords)
+
+            def is_removed(name):
+                return name in self.remove_functions or contain_one_of_items(name, self.remove_keywords)
+
+            for func in self.functions:
+                if is_removed(func.name):
                     # libpng-loader should not load this function
                     outfile.write(f" \\\n    REMOVE_API({func.name})")
+                elif is_optional(func.name):
+                    # libpng-loader should not force this function to be exist
+                    outfile.write(f" \\\n    LIBPNG_OPT({func.name})")
                 else:
                     outfile.write(f" \\\n    LIBPNG_MAP({func.name})")
             outfile.write(
@@ -378,18 +401,21 @@ class HeaderGenerator:
                 "\n"
             )
             for func in self.callbacks:
-                outfile.write(func.get_typedef() + "\n")
-            outfile.write("\n")
+                outfile.write(func.to_callback_str())
+                outfile.write("\n")
             outfile.write(
+                "\n"
                 "// ------ Function Types ------\n"
                 "\n"
             )
-            for func in self.api_functions:
-                outfile.write(func.get_typedef() + "\n")
+            for func in self.functions:
+                outfile.write(func.to_pfn_str())
+                outfile.write("\n")
 
             outfile.write("\n")
             for line in base_lines:
                 outfile.write(line)
+
 
 def get_args():
     parser = argparse.ArgumentParser()
