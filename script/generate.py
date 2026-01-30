@@ -1,6 +1,6 @@
 # Script to generate libpng-loader.h
 # Usage:
-#   1. Put "png.h" and "libpng-loader-base.h" into the same directory as generate.py
+#   1. Run "git submodule update --init" to download png.h
 #   2. Run "python generate.py" (requires python 3.10 or later)
 #   3. It generates "libpng-loader-generated.h" in the same directory as generate.py
 
