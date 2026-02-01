@@ -22,7 +22,7 @@
  */
 typedef unsigned int libpng_load_flags;
 enum {
-    LIBPNG_LOAD_FLAGS_UNSAFE = 0,  //!< Disable all validatiors.
+    LIBPNG_LOAD_FLAGS_UNSAFE = 0,  //!< Disable all validators.
     LIBPNG_LOAD_FLAGS_VERSION_CHECK = 1,  //!< Check the version string of user's libpng.
     LIBPNG_LOAD_FLAGS_FUNCTION_CHECK = 2,  //!< Ensure all function pointers are non-NULL.
     LIBPNG_LOAD_FLAGS_PRINT_ERRORS = 4,  //!< Output error messages to stderr.
@@ -221,7 +221,7 @@ typedef png_control *png_controlp;
 // They will be removed from the whole binary of libpng-loader.
 // (No need to edit libpng-loader.c!)
 // If you dont want to force some functions to be exists, replace LIBPNG_MAP with LIBPNG_OPT.
-// They will be ignored when libpng-loader checks fuction pointers.
+// They will be ignored when libpng-loader checks function pointers.
 #define LIBPNG_FUNC_MAPPING \
 // ------ Function Pointers ------
 
