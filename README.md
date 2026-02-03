@@ -5,19 +5,34 @@
 
 ## About
 
-libpng-loader is a meta loader for libpng16,
+libpng-loader is a meta loader for [libpng16](https://github.com/pnggroup/libpng/tree/v1.6.54),
 similar in concept to [volk for Vulkan](https://github.com/zeux/volk/).
 libpng-loader does not require libpng at compile time.
 Instead, your app can detect and enable PNG support at runtime based on library availability.
 
-Currently, libpng-loader officially supports 64-bit versions of Windows, Linux, and macOS.
+Currently, libpng-loader supports 64-bit versions of Windows, Linux, and macOS.
 Other platforms may work but may require additional effort to resolve issues.
 
 ## Building
 
 Copy `libpng-loader.h` and `libpng-loader.c` into your project and compile them as part of your build.
 
-libpng-loader does not require libpng to be installed at compile time.
+Or fetch this repository in CMake.
+
+```cmake
+include(FetchContent)
+set(PNGLOADER_TESTS OFF CACHE BOOL "" FORCE)
+set(PNGLOADER_THREAD_SAFE OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+    libpng-loader-project
+    GIT_REPOSITORY https://github.com/matyalatte/libpng-loader.git
+    GIT_TAG 2026.02
+    GIT_SUBMODULES ""
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(libpng-loader-project)
+target_link_libraries(${PROJECT_NAME} PUBLIC libpng-loader)
+```
 
 ## Usage
 
