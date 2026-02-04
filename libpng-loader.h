@@ -2,6 +2,21 @@
 #ifndef LIBPNG_LOADER_H
 #define LIBPNG_LOADER_H
 
+/**
+ * License Notice:
+ *
+ *   This file contains code under multiple licenses.
+ *
+ *   - The first section of this file ("Loader's API") and the LIBPNG_FUNC_MAPPING macro
+ *     are original work and are licensed under the MIT License.
+ *     See ./LICENSE for details.
+ *
+ *   - The remaining parts of this file (definitions of structs, macros, and function pointer types)
+ *     are derived from libpng (Copyright © 1998–2026 Glenn Randers-Pehrson and others)
+ *     and are subject to the libpng license.
+ *     See ./LICENSE.libpng for details.
+ */
+
 #include <setjmp.h>
 #include <stdint.h>
 #include <stdio.h>

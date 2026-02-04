@@ -121,3 +121,16 @@ Remove the corresponding `LIBPNG_MAP(png_*)` entry or replace it with `REMOVE_AP
     LIBPNG_MAP(png_create_read_struct) \
     ...
 ```
+
+## License
+
+In brief, the built binaries produced from this repository may be distributed under
+[the MIT License](./LICENSE).
+When redistributing the source code, you must retain [`./LICENSE.libpng`](./LICENSE.libpng).
+
+Specifically, all files in this repository **except** `libpng-loader.h` are released under the MIT License.
+`libpng-loader.h` contains portions of code derived from libpng.
+Those libpng-derived portions are subject to [the PNG Reference Library License version 2](./LICENSE.libpng).
+The built binaries may be distributed under the MIT License.
+However, when redistributing `libpng-loader.h` or libpng itself,
+you must retain the corresponding copyright and license notices.
